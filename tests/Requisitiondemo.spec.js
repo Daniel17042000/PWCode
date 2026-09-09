@@ -37,7 +37,7 @@ await expect(salesmanMenu).toBeVisible({
     timeout: 15000
 });
 
-await salesmanMenu.click();
+await salesmanMenu.dblclick();
 
 
     // ============================================================
@@ -227,10 +227,7 @@ await page.waitForTimeout(1000);
         .locator('#P84_MODEL_YEAR')
         .click();
 
-    await page.getByText(
-        '2026',
-        { exact: true }
-    ).click();
+    await page.locator('li[data-id="2026"]').click();
 
     console.log('Model Year Selected');
 
