@@ -1,16 +1,16 @@
-$projectPath = "C:\Users\Daniel Vinith\OneDrive\Desktop\PlayWright-vscode-Automation"
+# $projectPath = "C:\Users\Daniel Vinith\OneDrive\Desktop\PlayWright-vscode-Automation"
 
-Set-Location $projectPath
+# Set-Location $projectPath
 
-$changes = git status --porcelain
+# $changes = git status --porcelain
 
-if ($changes) {
+# if ($changes) {
     
-    git add .
+#     git add .
 
-    $date = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+#     $date = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
-    git commit -m "Daily update - $date"
+#     git commit -m "Daily update - $date"
 
-    git push origin main
-}
+#     git push origin main
+# }

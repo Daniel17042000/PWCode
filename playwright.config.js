@@ -7,7 +7,7 @@ const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
   testDir: './',
-  testMatch: '*.spec.js',
+  testMatch: '**/*.spec.js',
 
   // Don't run specs in parallel - these tests log in as different users and
   // drive shared workflow state through the UI (same reasoning as the
@@ -27,6 +27,7 @@ module.exports = defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    ignoreHTTPSErrors: true,
   },
 
   projects: [

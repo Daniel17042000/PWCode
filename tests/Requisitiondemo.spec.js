@@ -10,58 +10,69 @@ test('Requisition Screen Create New Request and Approve', async ({ page }) => {
         'https://dowellapps.com:8443/ords/r/manerp/aut129129/login'
     );
 
-    await page.setViewportSize({ width: 1000, height: 600 });
+    await page.setViewportSize({ width: 1280, height: 720 });
 
     await page.locator('#P9999_USERNAME').fill('Daniel');
     await page.locator('#P9999_PASSWORD').fill('Daniel@1234');
 
     await page.locator('#P9999_REMEMBER').check();
 
-    await page.getByText('Sign In', { exact: true }).click();
+    await page.locator("xpath=//button[.//span[text()='Sign In']] | //button[normalize-space()='Sign In']").click();
 
     console.log('Login Successfully');
 
+    await waitForProcessingToClear(page);
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000);
 
     // ============================================================
     // SELECT ROLE
     // ============================================================
 
-    await page.locator('span.t-Icon.fa.fa-random').click();
-    await page.waitForTimeout(1000);
+    const roleIcon = page.locator('span.t-Icon.fa.fa-random, .t-Icon.fa-random').first();
+    await roleIcon.waitFor({ state: 'visible', timeout: 15000 });
+    await roleIcon.click();
 
-const salesmanMenu = page.getByRole('menuitem', {
-    name: /Salesman NVS - New Vehicle Sales/
-});
+    const roleOption = page.locator("xpath=//a[contains(., 'Salesman NVS - New Vehicle Sales')]").first();
+    try {
+        await roleOption.waitFor({ state: 'visible', timeout: 4000 });
+    } catch {
+        // Retry clicking the role icon if dropdown didn't open
+        await roleIcon.click();
+        await roleOption.waitFor({ state: 'visible', timeout: 10000 });
+    }
 
-await expect(salesmanMenu).toBeVisible({
-    timeout: 15000
-});
-
-await salesmanMenu.dblclick();
+    await roleOption.click();
+    console.log('Role selected: Salesman NVS');
 
 
     // ============================================================
     // GO TO REQUISITION SCREEN
+    // ============================================================
 
-await page.getByRole('treeitem', {
-    name: 'New Vehicle Sales',
-    exact: true
-}).click();
+    await waitForProcessingToClear(page);
+    await page.waitForTimeout(2000);
 
-console.log('New Vehicle Sales clicked.');
+    // Expand / Click "New Vehicle Sales" in the Tree Navigation
+    const nvsToggle = page.locator('#t_TreeNav_0 .a-TreeView-toggle, .a-TreeView-node:has-text("New Vehicle Sales") .a-TreeView-toggle').first();
+    if (await nvsToggle.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await nvsToggle.click();
+    } else {
+        await page.getByRole('treeitem', { name: /New Vehicle Sales/ }).click();
+    }
+    console.log('New Vehicle Sales expanded.');
 
-await page.waitForTimeout(1000);
+    await page.waitForTimeout(1000);
 
-    await page.getByRole('treeitem', {
-        name: 'Transactions'
-    }).click();
+    // Expand / Click "Transactions"
+    const transactionsItem = page.getByRole('treeitem', { name: /Transactions/ }).or(page.locator("xpath=//a[normalize-space()='Transactions']")).first();
+    await transactionsItem.click();
 
-await page.waitForTimeout(1000);
+    await page.waitForTimeout(1000);
 
-    await page.getByRole('treeitem', {
-        name: 'Requisition'
-
-    }).click();
+    // Click "Requisition"
+    const requisitionItem = page.getByRole('treeitem', { name: /Requisition/ }).or(page.locator("xpath=//a[normalize-space()='Requisition']")).first();
+    await requisitionItem.click();
 
     await page.locator('#BTNS_onlyicon').click();
 
@@ -105,15 +116,15 @@ await page.waitForTimeout(1000);
     // REMARKS
     await page.locator('#P82_REQ_REMARKS').fill('TEST');
 
-   await page.waitForTimeout(1000);
+    await page.waitForTimeout(1000);
     // SAVE
-    await page.getByText('Save', {
-        exact: true
-    }).click();
+    await page.locator("xpath=//span[normalize-space()='Save']").click();
+    await waitForProcessingToClear(page);
+    await page.waitForTimeout(1000);
 
-    await page.getByText('New', {
-        exact: true
-    }).click();
+    await page.locator("xpath=//span[normalize-space()='New']").click();
+    await waitForProcessingToClear(page);
+    await page.waitForTimeout(1000);
 
     console.log('Requisition Header created Successfully');
 
@@ -282,27 +293,47 @@ await page.waitForTimeout(1000);
     // ============================================================
 
     await requisitionFrame
-        .getByText('Save', { exact: true })
+        .locator("xpath=//span[normalize-space()='Save']")
         .click();
 
     console.log('Requisition Detail Saved Successfully');
+
+    // Wait for modal dialog to close and parent page reload to stabilize
+    await page.locator('iframe[src*="requisition-b1"]').waitFor({ state: 'detached', timeout: 15000 }).catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
+    await waitForProcessingToClear(page);
+    await page.waitForTimeout(2000);
 
 
     // ============================================================
     // SEND FOR APPROVAL
     // ============================================================
 
-    // Wait for APEX processing spinner
-    await waitForProcessingToClear(page);
+    const sendForApprovalBtn = page.getByRole('button', {
+        name: 'Send For Approval',
+        exact: true
+    }).or(page.locator('button[data-otel-label="Send_for_Approval"]')).first();
 
-    await page.getByRole('button', {
-        name: 'Send For Approval'
-    }).click();
+    await sendForApprovalBtn.waitFor({ state: 'visible', timeout: 15000 });
+    await sendForApprovalBtn.click();
 
     console.log(
         'Requisition request has been sent Successfully'
     );
+//      const sendForApprovalBtn = page.locator(
+//     'button[data-otel-label="Send_for_Approval"]:visible'
+// );
 
+// await sendForApprovalBtn.waitFor({
+//     state: 'visible',
+//     timeout: 15000
+// });
+
+// await sendForApprovalBtn.click();
+
+// console.log(
+//     'Requisition request has been sent Successfully'
+// );
 
     // ============================================================
     // GET GENERATED DOCUMENT NUMBER
@@ -352,7 +383,7 @@ await page.waitForTimeout(1000);
 
     await page.locator('#P9999_REMEMBER').check();
 
-    await page.locator('#B671672845046722778').click();
+    await page.locator("xpath=//button[.//span[text()='Sign In']]").click();
 
     console.log('Approver logged in Successfully');
 
@@ -362,23 +393,26 @@ await page.waitForTimeout(1000);
     // ============================================================
 
     await waitForProcessingToClear(page);
+    await page.waitForTimeout(2000);
 
-    await page.getByText(
-        'New Vehicle Sales',
-        { exact: true }
-    ).click();
+    const approverNvsToggle = page.locator('#t_TreeNav_0 .a-TreeView-toggle, .a-TreeView-node:has-text("New Vehicle Sales") .a-TreeView-toggle').first();
+    if (await approverNvsToggle.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await approverNvsToggle.click();
+    } else {
+        await page.getByRole('treeitem', { name: /New Vehicle Sales/ }).click();
+    }
 
+    await page.waitForTimeout(1000);
 
     // Workflow Documents
-    await page.getByRole('treeitem', {
-        name: 'Workflow Documents'
-    }).click();
+    const workflowDocs = page.getByRole('treeitem', { name: /Workflow Documents/ }).or(page.locator("xpath=//a[normalize-space()='Workflow Documents']")).first();
+    await workflowDocs.click();
 
+    await page.waitForTimeout(1000);
 
     // Approvals Documents
-    await page.getByRole('treeitem', {
-        name: 'Approvals Documents'
-    }).click();
+    const approvalsDocs = page.getByRole('treeitem', { name: /Approvals Documents/ }).or(page.locator("xpath=//a[normalize-space()='Approvals Documents']")).first();
+    await approvalsDocs.click();
 
     await waitForProcessingToClear(page);
 
